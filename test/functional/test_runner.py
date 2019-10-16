@@ -285,6 +285,7 @@ BASE_SCRIPTS = [
     'wallet_balance.py',
     'p2p_initial_headers_sync.py',
     'feature_nulldummy.py',
+    'feature_checktemplateverify.py',
     'mempool_accept.py',
     'p2p_addr_selfannouncement.py',
     'mempool_expiry.py',
