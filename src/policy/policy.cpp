@@ -256,6 +256,14 @@ TxValidationState ValidateInputsStandardness(const CTransaction& tx, const CCoin
                 state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs", strprintf("p2sh redeemscript sigops exceed limit (input %u: %u > %u)", i, sigop_count, MAX_P2SH_SIGOPS));
                 return state;
             }
+        } else if (whichType == TxoutType::TX_BARE_DEFAULT_CHECKTEMPLATEVERIFY) {
+            // after activation, only allow bare with no scriptsig.
+            // pre-activation disallowing enforced via discouraged logic in the
+            // interpreter.
+            if (tx.vin[i].scriptSig.size() != 0) {
+                state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs", strprintf("input %u bare CTV scriptsig non-empty", i));
+                return state;
+            }
         }
     }
 
