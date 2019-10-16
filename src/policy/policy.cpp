@@ -242,6 +242,14 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
             if (subscript.GetSigOpCount(true) > MAX_P2SH_SIGOPS) {
                 return false;
             }
+        } else if (whichType == TxoutType::TX_BARE_DEFAULT_CHECKTEMPLATEVERIFY) {
+            // after activation, only allow bare with no scriptsig.
+            // pre-activation disallowing enforced via discouraged logic in the
+            // interpreter.
+            if (tx.vin[i].scriptSig.size() != 0) {
+                state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs", strprintf("input %u bare CTV scriptsig non-empty", i));
+                return state;
+            }
         }
     }
 
