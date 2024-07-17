@@ -27,7 +27,9 @@ class ChainstateManager;
 class ECC_Context;
 class NetGroupManager;
 class PeerManager;
+#ifdef WITH_SV2
 class Sv2TemplateProvider;
+#endif
 class TorController;
 namespace interfaces {
 class Chain;
@@ -42,6 +44,11 @@ struct Context;
 namespace util {
 class SignalInterrupt;
 }
+
+#ifndef WITH_SV2
+// Dummy
+class Sv2TemplateProvider {};
+#endif
 
 namespace node {
 class KernelNotifications;
@@ -76,6 +83,7 @@ struct NodeContext {
     std::unique_ptr<TorController> tor_controller;
     std::unique_ptr<ChainstateManager> chainman;
     std::unique_ptr<BanMan> banman;
+    std::unique_ptr<Sv2TemplateProvider> sv2_template_provider;
     ArgsManager* args{nullptr}; // Currently a raw pointer because the memory is not managed by this struct
     std::vector<BaseIndex*> indexes; // raw pointers because memory is not managed by this struct
     std::unique_ptr<interfaces::Chain> chain;
