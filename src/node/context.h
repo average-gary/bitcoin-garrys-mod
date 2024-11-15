@@ -27,6 +27,7 @@ class ChainstateManager;
 class ECC_Context;
 class NetGroupManager;
 class PeerManager;
+class Sv2TemplateProvider;
 class TorController;
 namespace interfaces {
 class Chain;
