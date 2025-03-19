@@ -254,7 +254,7 @@ class BlockchainTest(BitcoinTestFramework):
                 'height': 0,
                 'active': True
             },
-            'ctv': {
+            'ctv_csfs': {
                 'type': 'bip9',
                 'bip9': {
                     'start_time': -1,

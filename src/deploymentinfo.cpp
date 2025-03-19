@@ -18,7 +18,7 @@ const std::array<VBDeploymentInfo,Consensus::MAX_VERSION_BITS_DEPLOYMENTS> Versi
         .gbt_optional_rule = true,
     },
     VBDeploymentInfo{
-        .name = "ctv",
+        .name = "ctv_csfs",
         .gbt_optional_rule = true,
     },
 };
