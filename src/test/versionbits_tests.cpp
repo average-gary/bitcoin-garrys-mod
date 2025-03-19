@@ -455,8 +455,8 @@ BOOST_FIXTURE_TEST_CASE(versionbits_computeblockversion, BlockVersionTest)
             // times are picked.
             const uint32_t dep_mask{uint32_t{1} << chainParams->GetConsensus().vDeployments[dep].bit};
 
-            if (chain_type != ChainType::REGTEST && dep == Consensus::DEPLOYMENT_CTV) {
-                // CTV only exists as a deployment on regtest, so skip over it for other
+            if (chain_type != ChainType::REGTEST && dep == Consensus::DEPLOYMENT_CTVCSFS) {
+                // CTV and CSFS only exists as a deployment on regtest, so skip over it for other
                 // chains.
                 continue;
             }
