@@ -704,6 +704,13 @@ public:
         // BIP 54 §Specification uses a 2 hour timewarp grace period.
         consensus.max_timewarp = 7200;
 
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].bit = 1;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].min_activation_height = 0; // No activation delay
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].threshold = 108; // 75%
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].period = 144;
+
         consensus.nMinimumChainWork = uint256{};
         consensus.defaultAssumeValid = uint256{};
 

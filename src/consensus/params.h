@@ -34,6 +34,7 @@ enum DeploymentPos : uint16_t {
     DEPLOYMENT_TESTDUMMY,
     DEPLOYMENT_TAPROOT, // Deployment of Schnorr/Taproot (BIPs 340-342)
     DEPLOYMENT_BIP54,   // Deployment of Consensus Cleanup (BIP 54)
+    DEPLOYMENT_CTV,  // Deployment of CHECKTEMPLATEVERIFY (BIP 119) (regtest only)
     // NOTE: Also add new deployments to VersionBitsDeploymentInfo in deploymentinfo.cpp
     MAX_VERSION_BITS_DEPLOYMENTS
 };
