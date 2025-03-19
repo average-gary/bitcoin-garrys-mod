@@ -1455,7 +1455,7 @@ UniValue DeploymentInfo(const CBlockIndex* blockindex, const ChainstateManager& 
     SoftForkDescPushBack(blockindex, softforks, chainman, Consensus::DEPLOYMENT_TESTDUMMY);
     SoftForkDescPushBack(blockindex, softforks, chainman, Consensus::DEPLOYMENT_TAPROOT);
     if (chainman.GetParams().GetChainType() == ChainType::REGTEST) {
-        SoftForkDescPushBack(blockindex, softforks, chainman, Consensus::DEPLOYMENT_CTV);
+        SoftForkDescPushBack(blockindex, softforks, chainman, Consensus::DEPLOYMENT_CTVCSFS);
     }
     return softforks;
 }
