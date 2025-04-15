@@ -65,6 +65,9 @@ if(ENABLE_IPC)
 else()
   add_library(bitcoin_ipc STATIC EXCLUDE_FROM_ALL ipc/stub.cpp)
 endif()
+if(WITH_SV2)
+  add_subdirectory(sv2)
+endif()
 
 add_library(bitcoin_consensus STATIC EXCLUDE_FROM_ALL
   arith_uint256.cpp

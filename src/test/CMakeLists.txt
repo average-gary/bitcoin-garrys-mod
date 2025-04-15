@@ -183,6 +183,14 @@ if(ENABLE_IPC)
   add_subdirectory(${PROJECT_SOURCE_DIR}/src/ipc/test ipc)
 endif()
 
+if(WITH_SV2)
+  target_sources(test_bitcoin
+  PRIVATE
+    sv2_noise_tests.cpp
+  )
+  target_link_libraries(test_bitcoin bitcoin_sv2)
+endif()
+
 function(add_boost_test source_file)
   if(NOT EXISTS ${source_file})
     return()
