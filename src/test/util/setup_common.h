@@ -14,6 +14,7 @@
 #include <primitives/transaction.h>
 #include <random.h>
 #include <test/util/random.h>
+#include <test/util/net.h>
 #include <util/chaintype.h> // IWYU pragma: export
 #include <util/fs.h>
 #include <util/signalinterrupt.h>
@@ -246,6 +247,20 @@ std::unique_ptr<T> MakeNoLogFileContext(const ChainType chain_type = ChainType::
 
     return std::make_unique<T>(chain_type, opts);
 }
+
+class SocketTestingSetup : public BasicTestingSetup
+{
+public:
+    explicit SocketTestingSetup();
+    ~SocketTestingSetup();
+
+private:
+    // Save the original value of CreateSock here and restore it when the test ends.
+    const decltype(CreateSock) m_create_sock_orig;
+
+    // Queue of connected sockets returned by listening socket (represents network interface)
+    std::shared_ptr<DynSock::Queue> m_accepted_sockets{std::make_shared<DynSock::Queue>()};
+};
 
 CBlock getBlock13b8a();
 
