@@ -36,7 +36,7 @@ constexpr bool ValidDeployment(BuriedDeployment dep) { return dep <= DEPLOYMENT_
 
 enum DeploymentPos : uint16_t {
     DEPLOYMENT_TESTDUMMY,
-    DEPLOYMENT_CTVCSFS,  // Deployment of CHECKTEMPLATEVERIFY (BIP 119) and CHECKSIGFROMSTACK (BIP 348) (regtest only)
+    DEPLOYMENT_CTVCSFS,  // Deployment of CHECKTEMPLATEVERIFY (BIP 119) and CHECKSIGFROMSTACK (BIP 348) (regtest and testnet4 only)
     // NOTE: Also add new deployments to VersionBitsDeploymentInfo in deploymentinfo.cpp
     // Removing an entry may require bumping MinBIP9WarningHeight.
     MAX_VERSION_BITS_DEPLOYMENTS

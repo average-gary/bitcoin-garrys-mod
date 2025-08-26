@@ -330,6 +330,14 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].threshold = 1512; // 75%
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].period = 2016;
 
+        // Deployment of CTV and CSFS (BIPs 119 and 348)
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].min_activation_height = 0; // No activation delay
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].threshold = 1512; // 75%
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].period = 2016;
+
         consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000000009a0fe15d0177d086304"};
         consensus.defaultAssumeValid = uint256{"0000000002368b1e4ee27e2e85676ae6f9f9e69579b29093e9a82c170bf7cf8a"}; // 123613
 
