@@ -165,8 +165,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
                 
                 // Safety check: don't reorg too deep
                 if (reorg_depth <= m_options.testnet4_max_reorg_depth) {
-                    // Extract transactions from blocks we're going to reorg
-                    reorgTransactions = ExtractTransactionsFromReorgBlocks(pindexPrev, betterAncestor, m_chainstate);
+                    // TODO: Extract transactions from blocks we're going to reorg
+                    // Currently disabled due to UTXO state consistency issues
+                    // reorgTransactions = ExtractTransactionsFromReorgBlocks(pindexPrev, betterAncestor, m_chainstate);
                     
                     // Use the better ancestor as our previous block
                     pindexPrev = const_cast<CBlockIndex*>(betterAncestor);
@@ -202,6 +203,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     }
     
     // Add transactions from reorg'd blocks (testnet4 anti-spam)
+    // TODO: Currently disabled due to UTXO state consistency issues
+    // Transactions from reorg'd blocks may reference UTXOs that are inconsistent
+    // with the UTXO state when building on an earlier ancestor
     if (!reorgTransactions.empty()) {
         LogPrintf("CreateNewBlock(): Adding %d transactions from reorg'd blocks\n", reorgTransactions.size());
         
