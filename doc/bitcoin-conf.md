@@ -90,3 +90,37 @@ To use the generated configuration file, copy the example file into your data di
 # example copy command for linux user
 cp share/examples/bitcoin.conf ~/.bitcoin
 ```
+
+## Testnet4 Anti-Spam Feature
+
+Testnet4 includes an anti-spam feature to mitigate abuse of minimum difficulty blocks. This feature automatically reorgs chains of minimum difficulty blocks when creating new block templates, helping to maintain network functionality while preserving valid transactions.
+
+### Configuration Options
+
+- `testnet4antispam=1` (default: enabled on testnet4)
+  
+  Enable or disable the testnet4 minimum difficulty block reorg feature. When enabled, the miner will automatically build block templates on top of the last non-minimum-difficulty block instead of chains of minimum difficulty spam blocks.
+
+- `testnet4maxreorg=<n>` (default: 10)
+  
+  Maximum depth to reorg minimum difficulty blocks on testnet4. This limits how far back the miner will look for a suitable non-minimum-difficulty ancestor to prevent excessive computational overhead.
+
+### Example Configuration
+
+```
+[testnet4]
+# Enable anti-spam feature with conservative reorg depth
+testnet4antispam=1
+testnet4maxreorg=5
+
+# Disable anti-spam feature if needed for testing
+# testnet4antispam=0
+```
+
+### Safety Features
+
+- Only active on testnet4 network
+- Disabled during Initial Block Download (IBD) 
+- Respects maximum reorg depth limits
+- Preserves transactions from reorg'd blocks when possible
+- Can be completely disabled via configuration

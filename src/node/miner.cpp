@@ -26,6 +26,8 @@
 #include <util/signalinterrupt.h>
 #include <util/time.h>
 #include <validation.h>
+#include <arith_uint256.h>
+#include <node/blockstorage.h>
 
 #include <algorithm>
 #include <utility>
@@ -104,6 +106,10 @@ void ApplyArgsManOptions(const ArgsManager& args, BlockAssembler::Options& optio
     options.print_modified_fee = args.GetBoolArg("-printpriority", options.print_modified_fee);
     options.block_reserved_weight = args.GetIntArg("-blockreservedweight", options.block_reserved_weight);
     options.coinbase_locktime = args.GetBoolArg("-coinbaselocktime", DEFAULT_COINBASE_LOCKTIME);
+    
+    // Testnet4 anti-spam options
+    options.testnet4_antispam_reorg = args.GetBoolArg("-testnet4antispam", options.testnet4_antispam_reorg);
+    options.testnet4_max_reorg_depth = args.GetIntArg("-testnet4maxreorg", options.testnet4_max_reorg_depth);
 }
 
 void BlockAssembler::resetBlock()
@@ -135,6 +141,36 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     LOCK(::cs_main);
     CBlockIndex* pindexPrev = m_chainstate.m_chain.Tip();
     assert(pindexPrev != nullptr);
+    
+    // Testnet4 anti-spam: Reorg minimum difficulty blocks if on testnet4
+    std::vector<CTransactionRef> reorgTransactions;
+    if (chainparams.GetChainType() == ChainType::TESTNET4 && 
+        m_options.testnet4_antispam_reorg && 
+        !m_chainstate.m_chainman.IsInitialBlockDownload()) {
+        
+        // Check if current tip is a minimum difficulty block or part of a chain of them
+        if (IsMinimumDifficultyBlock(pindexPrev, chainparams.GetConsensus())) {
+            const CBlockIndex* betterAncestor = FindBestNonMinDiffAncestor(pindexPrev, chainparams.GetConsensus(), m_options.testnet4_max_reorg_depth);
+            if (betterAncestor && betterAncestor != pindexPrev) {
+                int reorg_depth = pindexPrev->nHeight - betterAncestor->nHeight;
+                LogPrintf("CreateNewBlock(): Testnet4 anti-spam reorg from height %d to %d, bypassing %d minimum difficulty blocks\n", 
+                         pindexPrev->nHeight, betterAncestor->nHeight, reorg_depth);
+                
+                // Safety check: don't reorg too deep
+                if (reorg_depth <= m_options.testnet4_max_reorg_depth) {
+                    // Extract transactions from blocks we're going to reorg
+                    reorgTransactions = ExtractTransactionsFromReorgBlocks(pindexPrev, betterAncestor, m_chainstate);
+                    
+                    // Use the better ancestor as our previous block
+                    pindexPrev = const_cast<CBlockIndex*>(betterAncestor);
+                } else {
+                    LogPrintf("CreateNewBlock(): Testnet4 anti-spam reorg depth %d exceeds maximum %d, skipping\n", 
+                             reorg_depth, m_options.testnet4_max_reorg_depth);
+                }
+            }
+        }
+    }
+    
     nHeight = pindexPrev->nHeight + 1;
 
     pblock->nVersion = m_chainstate.m_chainman.m_versionbitscache.ComputeBlockVersion(pindexPrev, chainparams.GetConsensus());
@@ -151,6 +187,33 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     int nDescendantsUpdated = 0;
     if (m_mempool) {
         addPackageTxs(nPackagesSelected, nDescendantsUpdated);
+    }
+    
+    // Add transactions from reorg'd blocks (testnet4 anti-spam)
+    if (!reorgTransactions.empty()) {
+        LogPrintf("CreateNewBlock(): Adding %d transactions from reorg'd blocks\n", reorgTransactions.size());
+        
+        for (const auto& tx : reorgTransactions) {
+            // Simple validation - ensure the transaction isn't already in our block
+            if (inBlock.count(tx->GetHash())) {
+                continue;
+            }
+            
+            // Basic checks before adding to template
+            if (nBlockWeight + GetTransactionWeight(*tx) <= m_options.nBlockMaxWeight &&
+                GetTransactionSigOpCost(*tx, m_chainstate.CoinsTip(), STANDARD_SCRIPT_VERIFY_FLAGS) + nBlockSigOpsCost <= MAX_BLOCK_SIGOPS_COST) {
+                
+                // Add the transaction to our block
+                pblock->vtx.emplace_back(tx);
+                pblocktemplate->vTxFees.push_back(0); // No fee from reorg'd tx
+                pblocktemplate->vTxSigOpsCost.push_back(GetTransactionSigOpCost(*tx, m_chainstate.CoinsTip(), STANDARD_SCRIPT_VERIFY_FLAGS));
+                
+                nBlockWeight += GetTransactionWeight(*tx);
+                nBlockSigOpsCost += GetTransactionSigOpCost(*tx, m_chainstate.CoinsTip(), STANDARD_SCRIPT_VERIFY_FLAGS);
+                nBlockTx++;
+                inBlock.insert(tx->GetHash());
+            }
+        }
     }
 
     const auto time_1{SteadyClock::now()};
@@ -583,5 +646,63 @@ std::optional<BlockRef> WaitTipChanged(ChainstateManager& chainman, KernelNotifi
     // Must release m_tip_block_mutex before getTip() locks cs_main, to
     // avoid deadlocks.
     return GetTip(chainman);
+}
+
+bool IsMinimumDifficultyBlock(const CBlockIndex* pindex, const Consensus::Params& params)
+{
+    if (!pindex || !params.fPowAllowMinDifficultyBlocks) {
+        return false;
+    }
+    
+    // Check if this block has the minimum difficulty (powLimit)
+    const uint32_t powLimitBits = UintToArith256(params.powLimit).GetCompact();
+    return pindex->nBits == powLimitBits;
+}
+
+const CBlockIndex* FindBestNonMinDiffAncestor(const CBlockIndex* pindex, const Consensus::Params& params, int max_depth)
+{
+    if (!pindex || !params.fPowAllowMinDifficultyBlocks) {
+        return pindex;
+    }
+    
+    const CBlockIndex* current = pindex;
+    int depth = 0;
+    
+    // Walk backwards through the chain looking for a non-minimum difficulty block
+    while (current && depth < max_depth) {
+        if (!IsMinimumDifficultyBlock(current, params)) {
+            return current;
+        }
+        current = current->pprev;
+        depth++;
+    }
+    
+    // If we've gone too deep or reached genesis, return the last checked block
+    return current ? current : pindex;
+}
+
+std::vector<CTransactionRef> ExtractTransactionsFromReorgBlocks(const CBlockIndex* pindex_start, const CBlockIndex* pindex_end, const Chainstate& chainstate)
+{
+    std::vector<CTransactionRef> transactions;
+    
+    if (!pindex_start || !pindex_end) {
+        return transactions;
+    }
+    
+    // Walk from pindex_start back to pindex_end, collecting all transactions
+    const CBlockIndex* current = pindex_start;
+    while (current && current != pindex_end) {
+        // Read the block data
+        CBlock block;
+        if (chainstate.m_chainman.m_blockman.ReadBlock(block, *current)) {
+            // Add all transactions except the coinbase
+            for (size_t i = 1; i < block.vtx.size(); ++i) {
+                transactions.push_back(block.vtx[i]);
+            }
+        }
+        current = current->pprev;
+    }
+    
+    return transactions;
 }
 } // namespace node

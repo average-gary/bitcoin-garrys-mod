@@ -178,6 +178,10 @@ public:
         // Whether to call TestBlockValidity() at the end of CreateNewBlock().
         bool test_block_validity{true};
         bool print_modified_fee{DEFAULT_PRINT_MODIFIED_FEE};
+        // Testnet4 anti-spam: enable minimum difficulty block reorg (default: true on testnet4)
+        bool testnet4_antispam_reorg{true};
+        // Testnet4 anti-spam: maximum depth to reorg minimum difficulty blocks
+        int testnet4_max_reorg_depth{10};
     };
 
     explicit BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool, const Options& options);
@@ -257,6 +261,15 @@ std::optional<BlockRef> GetTip(ChainstateManager& chainman);
 /* Waits for the connected tip to change until timeout has elapsed. During node initialization, this will wait until the tip is connected (regardless of `timeout`).
  * Returns the current tip, or nullopt if the node is shutting down. */
 std::optional<BlockRef> WaitTipChanged(ChainstateManager& chainman, KernelNotifications& kernel_notifications, const uint256& current_tip, MillisecondsDouble& timeout);
+
+/** Check if a block uses minimum difficulty (testnet4 anti-spam) */
+bool IsMinimumDifficultyBlock(const CBlockIndex* pindex, const Consensus::Params& params);
+
+/** Find the best non-minimum-difficulty ancestor for testnet4 reorg (testnet4 anti-spam) */
+const CBlockIndex* FindBestNonMinDiffAncestor(const CBlockIndex* pindex, const Consensus::Params& params, int max_depth = 10);
+
+/** Extract transactions from blocks being reorg'd for testnet4 anti-spam */
+std::vector<CTransactionRef> ExtractTransactionsFromReorgBlocks(const CBlockIndex* pindex_start, const CBlockIndex* pindex_end, const Chainstate& chainstate);
 } // namespace node
 
 #endif // BITCOIN_NODE_MINER_H
