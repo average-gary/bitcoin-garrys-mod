@@ -682,6 +682,7 @@ void SetupServerArgs(ArgsManager& argsman, bool can_listen_ipc)
     argsman.AddArg("-coinbaselocktime", strprintf("Set nLockTime to the current block height and nSequence to enforce it (default: %d)", DEFAULT_COINBASE_LOCKTIME), ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
     argsman.AddArg("-testnet4antispam", "Enable testnet4 minimum difficulty block reorg anti-spam feature (default: true on testnet4)", ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
     argsman.AddArg("-testnet4maxreorg=<n>", "Maximum depth to reorg minimum difficulty blocks on testnet4 (default: 10)", ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
+    argsman.AddArg("-testnet4cooldown=<n>", "Minimum seconds between testnet4 anti-spam reorgs to prevent template flooding (default: 5)", ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
 #ifdef WITH_SV2
     argsman.AddArg("-sv2", "Bitcoind will act as a Stratum v2 Template Provider, see doc/stratum-v2.md (default: false)", ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
     argsman.AddArg("-sv2interval", strprintf("Template Provider block template update interval (default: %d seconds)", Sv2TemplateProviderOptions().fee_check_interval.count()), ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);

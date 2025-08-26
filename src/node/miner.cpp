@@ -110,6 +110,7 @@ void ApplyArgsManOptions(const ArgsManager& args, BlockAssembler::Options& optio
     // Testnet4 anti-spam options
     options.testnet4_antispam_reorg = args.GetBoolArg("-testnet4antispam", options.testnet4_antispam_reorg);
     options.testnet4_max_reorg_depth = args.GetIntArg("-testnet4maxreorg", options.testnet4_max_reorg_depth);
+    options.testnet4_reorg_cooldown = args.GetIntArg("-testnet4cooldown", options.testnet4_reorg_cooldown);
 }
 
 void BlockAssembler::resetBlock()
@@ -149,8 +150,13 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
         m_options.testnet4_antispam_reorg && 
         !m_chainstate.m_chainman.IsInitialBlockDownload()) {
         
+        // Rate limiting: prevent template flooding by limiting reorg frequency
+        static int64_t lastReorgTime = 0;
+        int64_t currentTime = GetTime();
+        bool withinCooldown = (currentTime - lastReorgTime) < m_options.testnet4_reorg_cooldown;
+        
         // Check if current tip is a minimum difficulty block or part of a chain of them
-        if (IsMinimumDifficultyBlock(pindexPrev, chainparams.GetConsensus())) {
+        if (!withinCooldown && IsMinimumDifficultyBlock(pindexPrev, chainparams.GetConsensus())) {
             const CBlockIndex* betterAncestor = FindBestNonMinDiffAncestor(pindexPrev, chainparams.GetConsensus(), m_options.testnet4_max_reorg_depth);
             if (betterAncestor && betterAncestor != pindexPrev) {
                 int reorg_depth = pindexPrev->nHeight - betterAncestor->nHeight;
@@ -165,11 +171,15 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
                     // Use the better ancestor as our previous block
                     pindexPrev = const_cast<CBlockIndex*>(betterAncestor);
                     didTestnet4Reorg = true;
+                    lastReorgTime = currentTime;
                 } else {
                     LogPrintf("CreateNewBlock(): Testnet4 anti-spam reorg depth %d exceeds maximum %d, skipping\n", 
                              reorg_depth, m_options.testnet4_max_reorg_depth);
                 }
             }
+        } else if (withinCooldown && IsMinimumDifficultyBlock(pindexPrev, chainparams.GetConsensus())) {
+            LogDebug(BCLog::BENCH, "CreateNewBlock(): Testnet4 anti-spam reorg skipped due to cooldown (last: %d, current: %d, cooldown: %d)\n", 
+                     lastReorgTime, currentTime, m_options.testnet4_reorg_cooldown);
         }
     }
     

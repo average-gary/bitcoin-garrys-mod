@@ -105,13 +105,21 @@ Testnet4 includes an anti-spam feature to mitigate abuse of minimum difficulty b
   
   Maximum depth to reorg minimum difficulty blocks on testnet4. This limits how far back the miner will look for a suitable non-minimum-difficulty ancestor to prevent excessive computational overhead.
 
+- `testnet4cooldown=<n>` (default: 5)
+  
+  Minimum seconds between testnet4 anti-spam reorgs to prevent template flooding. This rate limiting prevents excessive template generation that can overwhelm SV2 template providers and cause protocol violations.
+
 ### Example Configuration
 
 ```
 [testnet4]
-# Enable anti-spam feature with conservative reorg depth
+# Enable anti-spam feature with conservative settings
 testnet4antispam=1
 testnet4maxreorg=5
+testnet4cooldown=10
+
+# For SV2 template providers, use longer cooldown to prevent flooding
+# testnet4cooldown=30
 
 # Disable anti-spam feature if needed for testing
 # testnet4antispam=0

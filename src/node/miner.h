@@ -182,6 +182,8 @@ public:
         bool testnet4_antispam_reorg{true};
         // Testnet4 anti-spam: maximum depth to reorg minimum difficulty blocks
         int testnet4_max_reorg_depth{10};
+        // Testnet4 anti-spam: minimum seconds between reorgs to prevent template flooding
+        int testnet4_reorg_cooldown{5};
     };
 
     explicit BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool, const Options& options);
