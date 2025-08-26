@@ -539,6 +539,11 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 108; // 75%
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 144;
 
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].bit = 1;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].min_activation_height = 0; // No activation delay
+
         consensus.nMinimumChainWork = uint256{};
         consensus.defaultAssumeValid = uint256{};
 
