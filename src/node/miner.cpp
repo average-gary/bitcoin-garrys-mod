@@ -144,6 +144,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     
     // Testnet4 anti-spam: Reorg minimum difficulty blocks if on testnet4
     std::vector<CTransactionRef> reorgTransactions;
+    bool didTestnet4Reorg = false;
     if (chainparams.GetChainType() == ChainType::TESTNET4 && 
         m_options.testnet4_antispam_reorg && 
         !m_chainstate.m_chainman.IsInitialBlockDownload()) {
@@ -163,6 +164,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
                     
                     // Use the better ancestor as our previous block
                     pindexPrev = const_cast<CBlockIndex*>(betterAncestor);
+                    didTestnet4Reorg = true;
                 } else {
                     LogPrintf("CreateNewBlock(): Testnet4 anti-spam reorg depth %d exceeds maximum %d, skipping\n", 
                              reorg_depth, m_options.testnet4_max_reorg_depth);
@@ -247,10 +249,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
     pblock->nNonce         = 0;
 
-    if (m_options.test_block_validity) {
+    if (m_options.test_block_validity && !didTestnet4Reorg) {
+        // Skip TestBlockValidity when we did a testnet4 anti-spam reorg since we're
+        // intentionally building on a non-tip block which causes validation to fail
         if (BlockValidationState state{TestBlockValidity(m_chainstate, *pblock, /*check_pow=*/false, /*check_merkle_root=*/false)}; !state.IsValid()) {
             throw std::runtime_error(strprintf("TestBlockValidity failed: %s", state.ToString()));
         }
+    } else if (didTestnet4Reorg) {
+        LogPrintf("CreateNewBlock(): Skipping TestBlockValidity due to testnet4 anti-spam reorg\n");
     }
     const auto time_2{SteadyClock::now()};
 
