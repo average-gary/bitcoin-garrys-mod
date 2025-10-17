@@ -22,6 +22,7 @@
 #include <policy/policy.h>
 #include <pow.h>
 #include <primitives/transaction.h>
+#include <random.h>
 #include <util/moneystr.h>
 #include <util/signalinterrupt.h>
 #include <util/time.h>
@@ -193,7 +194,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
         pblock->nVersion = gArgs.GetIntArg("-blockversion", pblock->nVersion);
     }
 
-    pblock->nTime = TicksSinceEpoch<std::chrono::seconds>(NodeClock::now());
+    // Set block time randomly between 1hr 41min and 1hr 49min into the future
+    // Base offset: 6060 seconds (1hr 41min)
+    // Random additional: 0-480 seconds (to reach 1hr 49min)
+    const int64_t base_offset = 6060; // 1hr 41min in seconds
+    const int64_t random_range = 480; // Range to add (480 seconds = 8 minutes)
+    const int64_t random_offset = base_offset + FastRandomContext().randrange<int64_t>(random_range + 1);
+    auto future_time = NodeClock::now() + std::chrono::seconds(random_offset);
+    pblock->nTime = TicksSinceEpoch<std::chrono::seconds>(future_time);
     m_lock_time_cutoff = pindexPrev->GetMedianTimePast();
 
     int nPackagesSelected = 0;
