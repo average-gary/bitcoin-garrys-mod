@@ -7,8 +7,13 @@
 #include <common/sockman.h>
 #include <logging.h>
 #include <netbase.h>
+#include <util/log.h>
 #include <util/sock.h>
 #include <util/thread.h>
+
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 // The set of sockets cannot be modified while waiting
 // The sleep time needs to be small to avoid new sockets stalling
@@ -36,37 +41,34 @@ bool SockMan::BindAndStartListening(const CService& to, bilingual_str& err_msg)
 
     // Allow binding if the port is still in TIME_WAIT state after
     // the program was closed and restarted.
-    if (sock->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<sockopt_arg_type>(&one), sizeof(one)) == SOCKET_ERROR) {
-        LogPrintLevel(BCLog::NET,
-                      BCLog::Level::Info,
-                      "Cannot set SO_REUSEADDR on %s listen socket: %s, continuing anyway\n",
-                      to.ToStringAddrPort(),
-                      NetworkErrorString(WSAGetLastError()));
+    if (sock->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == SOCKET_ERROR) {
+        LogDebug(BCLog::NET,
+                 "Cannot set SO_REUSEADDR on %s listen socket: %s, continuing anyway\n",
+                 to.ToStringAddrPort(),
+                 NetworkErrorString(WSAGetLastError()));
     }
 
     // some systems don't have IPV6_V6ONLY but are always v6only; others do have the option
     // and enable it by default or not. Try to enable it, if possible.
     if (to.IsIPv6()) {
 #ifdef IPV6_V6ONLY
-        if (sock->SetSockOpt(IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<sockopt_arg_type>(&one), sizeof(one)) == SOCKET_ERROR) {
-            LogPrintLevel(BCLog::NET,
-                          BCLog::Level::Info,
-                          "Cannot set IPV6_V6ONLY on %s listen socket: %s, continuing anyway\n",
-                          to.ToStringAddrPort(),
-                          NetworkErrorString(WSAGetLastError()));
+        if (sock->SetSockOpt(IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one)) == SOCKET_ERROR) {
+            LogDebug(BCLog::NET,
+                     "Cannot set IPV6_V6ONLY on %s listen socket: %s, continuing anyway\n",
+                     to.ToStringAddrPort(),
+                     NetworkErrorString(WSAGetLastError()));
         }
 #endif
 #ifdef WIN32
         int prot_level{PROTECTION_LEVEL_UNRESTRICTED};
         if (sock->SetSockOpt(IPPROTO_IPV6,
                              IPV6_PROTECTION_LEVEL,
-                             reinterpret_cast<const char*>(&prot_level),
+                             &prot_level,
                              sizeof(prot_level)) == SOCKET_ERROR) {
-            LogPrintLevel(BCLog::NET,
-                          BCLog::Level::Info,
-                          "Cannot set IPV6_PROTECTION_LEVEL on %s listen socket: %s, continuing anyway\n",
-                          to.ToStringAddrPort(),
-                          NetworkErrorString(WSAGetLastError()));
+            LogDebug(BCLog::NET,
+                     "Cannot set IPV6_PROTECTION_LEVEL on %s listen socket: %s, continuing anyway\n",
+                     to.ToStringAddrPort(),
+                     NetworkErrorString(WSAGetLastError()));
         }
 #endif
     }
@@ -119,16 +121,14 @@ std::unique_ptr<Sock> SockMan::AcceptConnection(const Sock& listen_sock, CServic
     if (!sock) {
         const int err{WSAGetLastError()};
         if (err != WSAEWOULDBLOCK) {
-            LogPrintLevel(BCLog::NET,
-                          BCLog::Level::Error,
-                          "Cannot accept new connection: %s\n",
-                          NetworkErrorString(err));
+            LogError("Cannot accept new connection: %s\n",
+                     NetworkErrorString(err));
         }
         return {};
     }
 
     if (!addr.SetSockAddr(reinterpret_cast<sockaddr*>(&storage), len)) {
-        LogPrintLevel(BCLog::NET, BCLog::Level::Warning, "Unknown socket family\n");
+        LogWarning("Unknown socket family\n");
     }
 
     return sock;
@@ -139,7 +139,7 @@ void SockMan::NewSockAccepted(std::unique_ptr<Sock>&& sock, const CService& me, 
     AssertLockNotHeld(m_connected_mutex);
 
     if (!sock->IsSelectable()) {
-        LogPrintf("connection from %s dropped: non-selectable socket\n", them.ToStringAddrPort());
+        LogInfo("connection from %s dropped: non-selectable socket\n", them.ToStringAddrPort());
         return;
     }
 

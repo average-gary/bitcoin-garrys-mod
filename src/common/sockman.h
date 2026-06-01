@@ -6,11 +6,14 @@
 #define BITCOIN_COMMON_SOCKMAN_H
 
 #include <netaddress.h>
+#include <sync.h>
 #include <util/sock.h>
+#include <util/threadinterrupt.h>
 #include <util/translation.h>
 
 #include <atomic>
 #include <memory>
+#include <thread>
 #include <vector>
 
 /**
