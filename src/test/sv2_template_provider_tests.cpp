@@ -41,7 +41,7 @@ public:
         CreateSock = [this](int, int, int) -> std::unique_ptr<Sock> {
             // This will be the bind/listen socket from m_tp. It will
             // create other sockets via its Accept() method.
-            return std::make_unique<DynSock>(std::make_shared<DynSock::Pipes>(), m_tp_accepted_sockets);
+            return std::make_unique<DynSock>(std::make_shared<DynSock::Pipes>(), m_tp_accepted_sockets.get());
         };
 
         BOOST_REQUIRE(m_tp->Start(m_tp_options));
@@ -93,7 +93,7 @@ public:
         // Have Sv2Connman's listen socket's Accept() simulate a newly arrived connection.
         m_current_client_pipes = std::make_shared<DynSock::Pipes>();
         m_tp_accepted_sockets->Push(
-            std::make_unique<DynSock>(m_current_client_pipes, std::make_shared<DynSock::Queue>()));
+            std::make_unique<DynSock>(m_current_client_pipes));
 
         // Flush transport for handshake part 1
         SendPeerBytes();

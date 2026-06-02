@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(Sv2NewTemplate_test)
     std::vector<uint256> merkle_path;
     CMutableTransaction mtx_tx;
     CTransaction tx{mtx_tx};
-    merkle_path.push_back(tx.GetHash());
+    merkle_path.push_back(tx.GetHash().ToUint256());
     new_template.m_merkle_path = merkle_path;
 
     DataStream ss{};

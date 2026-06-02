@@ -127,7 +127,7 @@ public:
             LogProgress(should_progress, progress, pretend_no_progress);
             if (should_progress && (!progress || pretend_no_progress)) {
                 bool dummy_reject_message = false;
-                CNetMessage net_msg = m_transport->GetReceivedMessage(std::chrono::microseconds(0), dummy_reject_message);
+                CNetMessage net_msg = m_transport->GetReceivedMessage(NodeClock::time_point{}, dummy_reject_message);
                 Sv2NetMsg msg(std::move(net_msg));
                 ret.emplace_back(std::move(msg));
                 progress = true;
@@ -166,7 +166,7 @@ public:
     /** Schedule bytes to be sent to the transport. */
     void Send(std::span<const uint8_t> data)
     {
-        LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Send: %s\n", HexStr(data));
+        LogTrace(BCLog::SV2, "Send: %s\n", HexStr(data));
         m_to_send.insert(m_to_send.end(), data.begin(), data.end());
     }
 
@@ -237,7 +237,7 @@ public:
         // Header
         DataStream ss_header_plain{};
         ss_header_plain << Sv2NetHeader(msg);
-        LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Header: %s\n", HexStr(ss_header_plain));
+        LogTrace(BCLog::SV2, "Header: %s\n", HexStr(ss_header_plain));
         std::span<std::byte> header_encrypted{buffer_span.subspan(0, SV2_HEADER_ENCRYPTED_SIZE)};
         BOOST_REQUIRE(m_peer_cipher->EncryptMessage(ss_header_plain, header_encrypted));
 
@@ -245,7 +245,7 @@ public:
         std::span<const std::byte> payload_plain = MakeByteSpan(msg.m_msg);
         // TODO: truncate very long messages, about 100 bytes at the start and end
         //       is probably enough for most debugging.
-        LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Payload: %s\n", HexStr(payload_plain));
+        LogTrace(BCLog::SV2, "Payload: %s\n", HexStr(payload_plain));
         std::span<std::byte> payload_encrypted{buffer_span.subspan(SV2_HEADER_ENCRYPTED_SIZE, encrypted_payload_size)};
         BOOST_REQUIRE(m_peer_cipher->EncryptMessage(payload_plain, payload_encrypted));
 
