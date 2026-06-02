@@ -5,6 +5,7 @@
 #include <sv2/transport.h>
 
 #include <logging.h>
+#include <util/log.h>
 #include <memusage.h>
 #include <sv2/messages.h>
 #include <sv2/noise.h>
@@ -19,7 +20,7 @@ Sv2Transport::Sv2Transport(CKey static_key, Sv2SignatureNoiseMessage certificate
       m_send_state{SendState::HANDSHAKE_STEP_2},
       m_message{Sv2NetMsg(Sv2NetHeader{})}
 {
-    LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Noise session receive state -> %s\n",
+    LogTrace(BCLog::SV2, "Noise session receive state -> %s\n",
                     RecvStateAsString(m_recv_state));
 }
 
@@ -57,7 +58,7 @@ void Sv2Transport::SetReceiveState(RecvState recv_state) noexcept
     }
     // Change state.
     m_recv_state = recv_state;
-    LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Noise session receive state -> %s\n",
+    LogTrace(BCLog::SV2, "Noise session receive state -> %s\n",
                   RecvStateAsString(m_recv_state));
 
 }
@@ -79,7 +80,7 @@ void Sv2Transport::SetSendState(SendState send_state) noexcept
     }
     // Change state.
     m_send_state = send_state;
-    LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Noise session send state -> %s\n",
+    LogTrace(BCLog::SV2, "Noise session send state -> %s\n",
                   SendStateAsString(m_send_state));
 }
 
@@ -158,12 +159,12 @@ bool Sv2Transport::SetMessageToSend(CSerializedNetMsg& msg) noexcept
     // is available) and the send buffer is empty. This limits the number of messages in the send
     // buffer to just one, and leaves the responsibility for queueing them up to the caller.
     if (m_send_state != SendState::READY) {
-        LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "SendState is not READY\n");
+        LogTrace(BCLog::SV2, "SendState is not READY\n");
         return false;
     }
 
     if (!m_send_buffer.empty()) {
-        LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Send buffer is not empty\n");
+        LogTrace(BCLog::SV2, "Send buffer is not empty\n");
         return false;
     }
 
@@ -180,7 +181,7 @@ bool Sv2Transport::SetMessageToSend(CSerializedNetMsg& msg) noexcept
     // Header
     DataStream ss_header_plain{};
     ss_header_plain << hdr;
-    LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Header: %s\n", HexStr(ss_header_plain));
+    LogTrace(BCLog::SV2, "Header: %s\n", HexStr(ss_header_plain));
     std::span<std::byte> header_encrypted{buffer_span.subspan(0, SV2_HEADER_ENCRYPTED_SIZE)};
     if (!m_cipher.EncryptMessage(ss_header_plain, header_encrypted)) {
         return false;
@@ -190,7 +191,7 @@ bool Sv2Transport::SetMessageToSend(CSerializedNetMsg& msg) noexcept
     std::span<const std::byte> payload_plain{MakeByteSpan(sv2_msg.m_msg)};
     // TODO: truncate very long messages, about 100 bytes at the start and end
     //       is probably enough for most debugging.
-    // LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Payload: %s\n", HexStr(payload_plain));
+    // LogTrace(BCLog::SV2, "Payload: %s\n", HexStr(payload_plain));
     std::span<std::byte> payload_encrypted{buffer_span.subspan(SV2_HEADER_ENCRYPTED_SIZE, encrypted_msg_size)};
     if (!m_cipher.EncryptMessage(payload_plain, payload_encrypted)) {
         return false;
@@ -380,11 +381,11 @@ bool Sv2Transport::ProcessReceivedPacketBytes() noexcept
         // Header received, decrypt it.
         std::array<std::byte, SV2_HEADER_PLAIN_SIZE> header_plain;
         if  (!m_cipher.DecryptMessage(MakeWritableByteSpan(m_recv_buffer), header_plain)) {
-            LogPrintLevel(BCLog::SV2, BCLog::Level::Debug, "Failed to decrypt header\n");
+            LogDebug(BCLog::SV2, "Failed to decrypt header\n");
             return false;
         }
 
-        LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Header: %s\n", HexStr(header_plain));
+        LogTrace(BCLog::SV2, "Header: %s\n", HexStr(header_plain));
 
         // Decode header
         DataStream ss_header{header_plain};
@@ -416,10 +417,10 @@ bool Sv2Transport::ProcessReceivedPacketBytes() noexcept
 
         std::span<std::byte> recv_span{MakeWritableByteSpan(m_recv_buffer).subspan(SV2_HEADER_ENCRYPTED_SIZE)};
         if (!m_cipher.DecryptMessage(recv_span, MakeWritableByteSpan(payload))) {
-            LogPrintLevel(BCLog::SV2, BCLog::Level::Debug, "Failed to decrypt message payload\n");
+            LogDebug(BCLog::SV2, "Failed to decrypt message payload\n");
             return false;
         }
-        LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Payload: %s\n", HexStr(payload));
+        LogTrace(BCLog::SV2, "Payload: %s\n", HexStr(payload));
 
         // Wipe the receive buffer where the next packet will be received into.
         ClearShrink(m_recv_buffer);
@@ -445,7 +446,7 @@ bool Sv2Transport::ReceivedMessageComplete() const noexcept
     return m_recv_state == RecvState::APP_READY;
 }
 
-CNetMessage Sv2Transport::GetReceivedMessage(std::chrono::microseconds time, bool& reject_message) noexcept
+CNetMessage Sv2Transport::GetReceivedMessage(NodeClock::time_point time, bool& reject_message) noexcept
 {
     AssertLockNotHeld(m_recv_mutex);
     LOCK(m_recv_mutex);

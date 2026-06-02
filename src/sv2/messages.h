@@ -8,6 +8,7 @@
 #include <net.h> // for CSerializedNetMsg and CNetMessage
 #include <consensus/validation.h>
 #include <cstdint>
+#include <node/mining_types.h>
 #include <primitives/transaction.h>
 #include <script/script.h>
 #include <span.h>
@@ -314,7 +315,7 @@ struct Sv2NewTemplateMsg
     std::vector<uint256> m_merkle_path;
 
     Sv2NewTemplateMsg() = default;
-    explicit Sv2NewTemplateMsg(const CBlockHeader& header, const CTransactionRef coinbase_tx, std::vector<uint256> coinbase_merkle_path, int witness_commitment_index, uint64_t template_id, bool future_template);
+    explicit Sv2NewTemplateMsg(const CBlockHeader& header, const node::CoinbaseTx& coinbase_tx, std::vector<uint256> coinbase_merkle_path, uint64_t template_id, bool future_template);
 
     template <typename Stream>
     void Serialize(Stream& s) const
