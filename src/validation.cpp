@@ -4281,6 +4281,27 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
         }
     }
 
+    // BIP 54 §Specification rule 3: transactions whose witness-stripped serialized size is
+    // exactly 64 bytes are invalid. Also rule 4: the coinbase transaction's nLockTime must be
+    // set to the height of the block minus 1, and its nSequence field must not be 0xffffffff.
+    if (DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_BIP54)) {
+        for (const auto& tx : block.vtx) {
+            if (::GetSerializeSize(TX_NO_WITNESS(*tx)) == 64) {
+                return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-txsize-64",
+                                     "transaction has witness-stripped serialized size 64");
+            }
+        }
+        const CTransaction& coinbase{*block.vtx[0]};
+        if (coinbase.nLockTime != static_cast<uint32_t>(nHeight - 1)) {
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-cb-locktime",
+                                 "coinbase nLockTime must equal block height minus 1");
+        }
+        if (coinbase.vin[0].nSequence == 0xffffffffu) {
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-cb-sequence",
+                                 "coinbase input nSequence must not equal 0xffffffff");
+        }
+    }
+
     // Validation for witness commitments.
     // * We compute the witness hash (which is the hash including witnesses) of all the block's transactions, except the
     //   coinbase (where 0x0000....0000 is used instead).
