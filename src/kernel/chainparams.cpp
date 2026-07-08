@@ -118,6 +118,14 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 1815; // 90%
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 2016;
 
+        // BIP 54 (Consensus Cleanup): not yet activated on mainnet.
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 1815; // 90%
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 2016;
+
         consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000dee8e2a309ad8a9820433c68"};
         consensus.defaultAssumeValid = uint256{"00000000000000000000611fd22f2df7c8fbd0688745c3a6c3bb5109cc2a12cb"}; // 912683
 
@@ -237,6 +245,14 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 1512; // 75%
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 2016;
 
+        // BIP 54 (Consensus Cleanup): not yet activated on testnet3.
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 1512;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 2016;
+
         consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000000016dd270dd94fac1d7632"};
         consensus.defaultAssumeValid = uint256{"0000000000000065c6c38258e201971a3fdfcc2ceee0dd6e85a6c022d45dee34"}; // 4550000
 
@@ -332,6 +348,14 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 0; // No activation delay
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 1512; // 75%
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 2016;
+
+        // BIP 54 (Consensus Cleanup): not activated on testnet4. Testnet5 supersedes it (BIP 95).
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 1512;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 2016;
 
         consensus.nMinimumChainWork = uint256{"00000000000000000000000000000000000000000000034a4690fe592dc49c7c"};
         consensus.defaultAssumeValid = uint256{"000000000000000180a58e7fa3b0db84b5ea76377524894f53660d93ac839d9b"}; // 91000
@@ -472,6 +496,14 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 1815; // 90%
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 2016;
 
+        // BIP 54 (Consensus Cleanup): not activated on signet.
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 1815;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 2016;
+
         // message start is defined as the first 4 bytes of the sha256d of the block script
         HashWriter h{};
         h << consensus.signet_challenge;
@@ -548,6 +580,16 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 0; // No activation delay
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 108; // 75%
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 144;
+
+        // BIP 54 (Consensus Cleanup): always active on regtest so tests can exercise it.
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 108; // 75%
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 144;
+        // BIP 54 §Specification uses a 2 hour timewarp grace period.
+        consensus.max_timewarp = 7200;
 
         consensus.nMinimumChainWork = uint256{};
         consensus.defaultAssumeValid = uint256{};
