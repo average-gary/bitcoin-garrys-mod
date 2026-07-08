@@ -4194,12 +4194,24 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidatio
 
     // Testnet4 and regtest only: Check timestamp against prev for difficulty-adjustment
     // blocks to prevent timewarp attacks (see https://github.com/bitcoin/bitcoin/pull/15482).
-    if (consensusParams.enforce_BIP94) {
-        // Check timestamp for the first block of each difficulty adjustment
-        // interval, except the genesis block.
-        if (nHeight % consensusParams.DifficultyAdjustmentInterval() == 0) {
-            if (block.GetBlockTime() < pindexPrev->GetBlockTime() - MAX_TIMEWARP) {
+    // Also enforced under BIP 54 (Consensus Cleanup), which additionally adds the last-block-of-period rule.
+    const bool bip54_active{DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_BIP54)};
+    if (consensusParams.enforce_BIP94 || bip54_active) {
+        const int64_t interval{consensusParams.DifficultyAdjustmentInterval()};
+        // BIP 54 §Specification rule 1 (also BIP 94): first block of each retarget period
+        // must have timestamp ≥ prev - max_timewarp.
+        if (nHeight % interval == 0) {
+            if (block.GetBlockTime() < pindexPrev->GetBlockTime() - consensusParams.max_timewarp) {
                 return state.Invalid(BlockValidationResult::BLOCK_INVALID_HEADER, "time-timewarp-attack", "block's timestamp is too early on diff adjustment block");
+            }
+        }
+        // BIP 54 §Specification rule 2: last block of each retarget period (N%interval == interval-1)
+        // must have timestamp ≥ block at N-(interval-1). At nHeight == interval-1 the ancestor is genesis.
+        if (bip54_active && nHeight % interval == interval - 1) {
+            const CBlockIndex* first_of_period{pindexPrev->GetAncestor(nHeight - (interval - 1))};
+            assert(first_of_period != nullptr);
+            if (block.GetBlockTime() < first_of_period->GetBlockTime()) {
+                return state.Invalid(BlockValidationResult::BLOCK_INVALID_HEADER, "time-timewarp-last-block", "block's timestamp is earlier than the first block of the retarget period");
             }
         }
     }
