@@ -166,7 +166,7 @@ bool IsStandardTx(const CTransaction& tx, const std::optional<unsigned>& max_dat
 /**
  * Check the total number of non-witness sigops across the whole transaction, as per BIP54.
  */
-static bool CheckSigopsBIP54(const CTransaction& tx, const CCoinsViewCache& inputs)
+bool CheckSigopsBIP54(const CTransaction& tx, const CCoinsViewCache& inputs)
 {
     Assert(!tx.IsCoinBase());
 

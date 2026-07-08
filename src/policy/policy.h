@@ -160,6 +160,12 @@ bool IsStandardTx(const CTransaction& tx, const std::optional<unsigned>& max_dat
 */
 bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs);
 /**
+* BIP 54 sigops-per-transaction limit: sum of non-witness sigops in scriptSig
+* and spent scriptPubKey (bare + P2SH), across all inputs, must not exceed
+* MAX_TX_LEGACY_SIGOPS. Not called on coinbase.
+*/
+bool CheckSigopsBIP54(const CTransaction& tx, const CCoinsViewCache& inputs);
+/**
 * Check if the transaction is over standard P2WSH resources limit:
 * 3600bytes witnessScript size, 80bytes per witness stack element, 100 witness stack elements
 * These limits are adequate for multisignatures up to n-of-100 using OP_CHECKSIG, OP_ADD, and OP_EQUAL.

@@ -2555,6 +2555,10 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
         nLockTimeFlags |= LOCKTIME_VERIFY_SEQUENCE;
     }
 
+    // BIP 54 (Consensus Cleanup): once active, enforce a per-transaction limit
+    // on legacy sigops (evaluated in scriptSig + spent scriptPubKey, including P2SH).
+    const bool enforce_bip54{DeploymentActiveAt(*pindex, m_chainman, Consensus::DEPLOYMENT_BIP54)};
+
     // Get the script flags for this block
     unsigned int flags{GetBlockScriptFlags(*pindex, m_chainman)};
 
@@ -2623,6 +2627,13 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
             if (!SequenceLocks(tx, nLockTimeFlags, prevheights, *pindex)) {
                 state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-nonfinal",
                               "contains a non-BIP68-final transaction " + tx.GetHash().ToString());
+                break;
+            }
+
+            // BIP 54 §Specification: per-transaction legacy sigop limit.
+            if (enforce_bip54 && !CheckSigopsBIP54(tx, view)) {
+                state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-legacy-sigops",
+                              "transaction exceeds BIP 54 legacy sigop limit " + tx.GetHash().ToString());
                 break;
             }
         }
