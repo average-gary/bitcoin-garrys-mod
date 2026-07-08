@@ -33,6 +33,7 @@ constexpr bool ValidDeployment(BuriedDeployment dep) { return dep <= DEPLOYMENT_
 enum DeploymentPos : uint16_t {
     DEPLOYMENT_TESTDUMMY,
     DEPLOYMENT_TAPROOT, // Deployment of Schnorr/Taproot (BIPs 340-342)
+    DEPLOYMENT_BIP54,   // Deployment of Consensus Cleanup (BIP 54)
     // NOTE: Also add new deployments to VersionBitsDeploymentInfo in deploymentinfo.cpp
     MAX_VERSION_BITS_DEPLOYMENTS
 };
@@ -115,6 +116,11 @@ struct Params {
       * the block storm mitigation.
       */
     bool enforce_BIP94;
+    /**
+     * Timewarp grace period (in seconds) used when either enforce_BIP94 is set
+     * or DEPLOYMENT_BIP54 is active. BIP 94 (testnet4) uses 600s; BIP 54 uses 7200s.
+     */
+    int64_t max_timewarp{600};
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
