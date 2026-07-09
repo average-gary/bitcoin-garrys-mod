@@ -111,10 +111,14 @@ class InputMissing(BadTxTemplate):
 
 
 # The following check prevents exploit of lack of merkle
-# tree depth commitment (CVE-2017-12842)
+# tree depth commitment (CVE-2017-12842). BIP 54 rule 3 makes 64-byte
+# witness-stripped transactions consensus-invalid, so this is now rejected
+# at the block level too, not just as a mempool policy.
 class SizeTooSmall(BadTxTemplate):
     reject_reason = "tx-size-small"
-    valid_in_block = True
+    expect_disconnect = True
+    valid_in_block = False
+    block_reject_reason = "bad-txns-txsize-64"
 
     def get_tx(self):
         tx = CTransaction()

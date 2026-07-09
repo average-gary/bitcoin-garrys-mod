@@ -17,6 +17,7 @@ from test_framework.messages import (
     CTxIn,
     CTxInWitness,
     CTxOut,
+    MAX_SEQUENCE_NONFINAL,
     SEQUENCE_FINAL,
     tx_from_hex,
     TX_MAX_STANDARD_VERSION,
@@ -1737,10 +1738,12 @@ class TaprootTest(BitcoinTestFramework):
         assert_equal(self.nodes[0].getblockcount(), 0)
         coinbase = CTransaction()
         coinbase.version = 1
-        coinbase.vin = [CTxIn(COutPoint(0, 0xffffffff), CScript([OP_1, OP_1]), SEQUENCE_FINAL)]
+        # BIP 54 rule 4 requires nSequence != 0xffffffff on the coinbase input;
+        # nLockTime = height-1 = 0 is already correct for block 1.
+        coinbase.vin = [CTxIn(COutPoint(0, 0xffffffff), CScript([OP_1, OP_1]), MAX_SEQUENCE_NONFINAL)]
         coinbase.vout = [CTxOut(5000000000, CScript([OP_1]))]
         coinbase.nLockTime = 0
-        assert coinbase.txid_hex == "f60c73405d499a956d3162e3483c395526ef78286458a4cb17b125aa92e49b20"
+        assert coinbase.txid_hex == "2a8103d4574e66e8e2c746a4d40f2626ab084263b42c869d1b3c73f8341cc5d5"
         # Mine it
         block = create_block(hashprev=int(self.nodes[0].getbestblockhash(), 16), coinbase=coinbase)
         block.solve()

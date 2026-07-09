@@ -52,7 +52,10 @@ from test_framework.wallet import (
 
 DIFFICULTY_ADJUSTMENT_INTERVAL = 144
 MAX_FUTURE_BLOCK_TIME = 2 * 3600
-MAX_TIMEWARP = 600
+# BIP 54 uses a 2-hour timewarp grace period; regtest activates BIP 54 from
+# block 1, so max_timewarp is 7200 here rather than the testnet4 BIP 94 value
+# of 600s.
+MAX_TIMEWARP = 7200
 VERSIONBITS_TOP_BITS = 0x20000000
 VERSIONBITS_DEPLOYMENT_TESTDUMMY_BIT = 28
 DEFAULT_BLOCK_MIN_TX_FEE = 1 # default `-blockmintxfee` setting [sat/kvB]

@@ -837,47 +837,28 @@ class FullBlockTest(BitcoinTestFramework):
         self.send_blocks([b60], True)
         self.save_spendable_output()
 
-        # Test BIP30 (reject duplicate)
+        # BIP 30 tests are unreachable once BIP 54 is active: BIP 54 rule 4
+        # requires every coinbase's nLockTime to equal (height - 1), so two
+        # coinbases mined at different heights can never serialize identically
+        # and no BIP 30 duplicate can ever be constructed. See the BIP 54
+        # Motivation section — "enforcing that new coinbase transactions are
+        # different from the early BIP 34 violations makes it possible to get
+        # rid of BIP 30 validation forever." On regtest we activate BIP 54
+        # from block 1, so the two sub-tests below (b61 duplicate + b_dup_2
+        # spend-then-duplicate) are skipped rather than fixed.
         #
-        # -> b39 (11) -> b42 (12) -> b43 (13) -> b53 (14) -> b55 (15) -> b57 (16) -> b60 ()
-        #                                                                                  \-> b61 ()
-        #
-        # Blocks are not allowed to contain a transaction whose id matches that of an earlier,
-        # not-fully-spent transaction in the same chain. To test, make identical coinbases;
-        # the second one should be rejected. See also CVE-2012-1909.
-        #
-        self.log.info("Reject a block with a transaction with a duplicate hash of a previous transaction (BIP30)")
+        # To exercise BIP 30 directly, run against a chain where BIP 54 is
+        # not active (e.g. a future -testactivationheight=bip54@... option).
+        self.log.info("Skip BIP30 duplicate-coinbase tests: superseded by BIP 54 on regtest")
+
+        # Keep the tip pointer where the original BIP30 tail left off so
+        # subsequent tests that anchor on 'dup_2' or its descendants remain
+        # buildable. Reach the same visible-tip topology by mining plain blocks.
         self.move_tip(60)
-        b61 = self.next_block(61)
-        b61.vtx[0].nLockTime = 0
-        b61.vtx[0].vin[0].scriptSig = DUPLICATE_COINBASE_SCRIPT_SIG
-        b61 = self.update_block(61, [])
-        assert_equal(duplicate_tx.serialize(), b61.vtx[0].serialize())
-        # BIP30 is always checked on regtest, regardless of the BIP34 activation height
-        self.send_blocks([b61], success=False, reject_reason='bad-txns-BIP30', reconnect=True)
-
-        # Test BIP30 (allow duplicate if spent)
-        #
-        # -> b57 (16) -> b60 ()
-        #            \-> b_spend_dup_cb (b_dup_cb) -> b_dup_2 ()
-        #
-        self.move_tip(57)
-        self.next_block('spend_dup_cb')
-        tx = CTransaction()
-        tx.vin.append(CTxIn(COutPoint(duplicate_tx.txid_int, 0)))
-        tx.vout.append(CTxOut(0, CScript([OP_TRUE])))
-        self.sign_tx(tx, duplicate_tx)
-        b_spend_dup_cb = self.update_block('spend_dup_cb', [tx])
-
+        b_spend_dup_cb = self.next_block('spend_dup_cb')
+        self.send_blocks([b_spend_dup_cb], success=True)
         b_dup_2 = self.next_block('dup_2')
-        b_dup_2.vtx[0].nLockTime = 0
-        b_dup_2.vtx[0].vin[0].scriptSig = DUPLICATE_COINBASE_SCRIPT_SIG
-        b_dup_2 = self.update_block('dup_2', [])
-        assert_equal(duplicate_tx.serialize(), b_dup_2.vtx[0].serialize())
-        assert_equal(self.nodes[0].gettxout(txid=duplicate_tx.txid_hex, n=0)['confirmations'], 119)
-        self.send_blocks([b_spend_dup_cb, b_dup_2], success=True)
-        # The duplicate has less confirmations
-        assert_equal(self.nodes[0].gettxout(txid=duplicate_tx.txid_hex, n=0)['confirmations'], 1)
+        self.send_blocks([b_dup_2], success=True)
 
         # Test tx.isFinal is properly rejected (not an exhaustive tx.isFinal test, that should be in data-driven transaction tests)
         #
