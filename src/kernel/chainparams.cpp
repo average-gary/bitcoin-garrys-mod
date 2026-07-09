@@ -420,6 +420,119 @@ public:
 };
 
 /**
+ * Testnet (v5): public test network defined by BIP 95. Supersedes testnet4.
+ * Enforces BIP 54 (Consensus Cleanup) from block 1 and drops the 20-minute
+ * min-difficulty exception that caused constant reorgs on testnet4.
+ */
+class CTestNet5Params : public CChainParams {
+public:
+    CTestNet5Params() {
+        m_chain_type = ChainType::TESTNET5;
+        consensus.signet_blocks = false;
+        consensus.signet_challenge.clear();
+        consensus.nSubsidyHalvingInterval = 210000;
+        consensus.BIP34Height = 1;
+        consensus.BIP34Hash = uint256{};
+        consensus.BIP65Height = 1;
+        consensus.BIP66Height = 1;
+        consensus.CSVHeight = 1;
+        consensus.SegwitHeight = 1;
+        consensus.MinBIP9WarningHeight = 0;
+        // BIP 95 §Chain Parameters specifies a minimum difficulty of 0x1a0fffff (~1,000,000).
+        // TODO: switch this to that tighter powLimit once the BIP publishes a genesis block
+        // mined at that difficulty. In the interim we reuse the testnet4 placeholder genesis
+        // (nBits 0x1d00ffff, difficulty 1), which requires a looser powLimit for the
+        // chainparams sanity check to pass.
+        consensus.powLimit = uint256{"00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
+        consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
+        consensus.nPowTargetSpacing = 10 * 60;
+        // BIP 95: no 20-minute min-difficulty exception. Node behavior matches mainnet.
+        consensus.fPowAllowMinDifficultyBlocks = false;
+        // BIP 95 pulls in BIP 54 rule 1 (first-block timewarp) via DEPLOYMENT_BIP54; leave
+        // enforce_BIP94 off so we don't also inherit testnet4's difficulty-fix which alters retargets.
+        consensus.enforce_BIP94 = false;
+        consensus.fPowNoRetargeting = false;
+        // BIP 54 §Specification uses a 2 hour timewarp grace period.
+        consensus.max_timewarp = 7200;
+
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].threshold = 1512; // 75%
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].period = 2016;
+
+        // Deployment of Taproot (BIPs 340-342): always active from block 1 per BIP 95.
+        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].bit = 2;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 1512; // 75%
+        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 2016;
+
+        // BIP 54 (Consensus Cleanup): always active from block 1 per BIP 95.
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 1512;
+        consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 2016;
+
+        consensus.nMinimumChainWork = uint256{};
+        consensus.defaultAssumeValid = uint256{};
+
+        // BIP 95 §Chain Parameters: Message start = 0x46495645 (ASCII "FIVE").
+        pchMessageStart[0] = 0x46;
+        pchMessageStart[1] = 0x49;
+        pchMessageStart[2] = 0x56;
+        pchMessageStart[3] = 0x45;
+        // BIP 95 §Chain Parameters: P2P port 18335.
+        nDefaultPort = 18335;
+        nPruneAfterHeight = 1000;
+        m_assumed_blockchain_size = 0;
+        m_assumed_chain_state_size = 0;
+
+        // BIP 95 §Genesis Block: placeholder inherited from testnet4 pending final mining.
+        // The BIP explicitly marks these values as TODO ("Mine the block. The values below are
+        // placeholders inherited from Testnet 4."). Once the BIP finalizes, replace these plus
+        // the two asserts below.
+        const char* testnet5_genesis_msg = "03/May/2024 000000000000000000001ebd58c244970b3aa9d783bb001011fbe8ea8e98e00e";
+        const CScript testnet5_genesis_script = CScript() << "000000000000000000000000000000000000000000000000000000000000000000"_hex << OP_CHECKSIG;
+        genesis = CreateGenesisBlock(testnet5_genesis_msg,
+                testnet5_genesis_script,
+                1714777860,
+                393743547,
+                0x1d00ffff,
+                1,
+                50 * COIN);
+        consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256{"00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043"});
+        assert(genesis.hashMerkleRoot == uint256{"7aa0a7ae1e223414cb807e40cd57e667b718e42aaf9306db9102fe28912b7b4e"});
+
+        vFixedSeeds.clear();
+        vSeeds.clear();
+        // BIP 95 §DNS Seeds: TODO — no seeds published yet.
+
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
+        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
+        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
+
+        bech32_hrp = "tb";
+
+        fDefaultConsistencyChecks = false;
+        m_is_mockable_chain = false;
+
+        chainTxData = ChainTxData{
+            .nTime    = 0,
+            .tx_count = 0,
+            .dTxRate  = 0,
+        };
+    }
+};
+
+/**
  * Signet: test network with an additional consensus parameter (see BIP325).
  */
 class SigNetParams : public CChainParams {
@@ -705,6 +818,11 @@ std::unique_ptr<const CChainParams> CChainParams::TestNet4()
     return std::make_unique<const CTestNet4Params>();
 }
 
+std::unique_ptr<const CChainParams> CChainParams::TestNet5()
+{
+    return std::make_unique<const CTestNet5Params>();
+}
+
 std::vector<int> CChainParams::GetAvailableSnapshotHeights() const
 {
     std::vector<int> heights;
@@ -721,6 +839,7 @@ std::optional<ChainType> GetNetworkForMagic(const MessageStartChars& message)
     const auto mainnet_msg = CChainParams::Main()->MessageStart();
     const auto testnet_msg = CChainParams::TestNet()->MessageStart();
     const auto testnet4_msg = CChainParams::TestNet4()->MessageStart();
+    const auto testnet5_msg = CChainParams::TestNet5()->MessageStart();
     const auto regtest_msg = CChainParams::RegTest({})->MessageStart();
     const auto signet_msg = CChainParams::SigNet({})->MessageStart();
 
@@ -730,6 +849,8 @@ std::optional<ChainType> GetNetworkForMagic(const MessageStartChars& message)
         return ChainType::TESTNET;
     } else if (std::ranges::equal(message, testnet4_msg)) {
         return ChainType::TESTNET4;
+    } else if (std::ranges::equal(message, testnet5_msg)) {
+        return ChainType::TESTNET5;
     } else if (std::ranges::equal(message, regtest_msg)) {
         return ChainType::REGTEST;
     } else if (std::ranges::equal(message, signet_msg)) {
