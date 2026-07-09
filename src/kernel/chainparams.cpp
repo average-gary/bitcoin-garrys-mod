@@ -486,6 +486,15 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 1512;
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 2016;
 
+        // Deployment of CTV and CSFS (BIPs 119 and 348): always active from block 1 (our own
+        // choice; not part of BIP 95). Uses jamesob's bit-1 slot to match testnet4/regtest.
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].bit = 1;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].min_activation_height = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].threshold = 1512;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].period = 2016;
+
         consensus.nMinimumChainWork = uint256{};
         consensus.defaultAssumeValid = uint256{};
 

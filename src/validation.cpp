@@ -1254,8 +1254,10 @@ bool MemPoolAccept::PolicyScriptChecks(const ATMPArgs& args, Workspace& ws)
     unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
 
     // CHECKTEMPLATEVERIFY (BIP119) and CHECKSIGFROMSTACK (BIP348) are always active on
-    // regtest and testnet4, but no other chain.
-    if (args.m_chainparams.GetChainType() == ChainType::REGTEST || args.m_chainparams.GetChainType() == ChainType::TESTNET4) {
+    // regtest, testnet4, and testnet5, but no other chain.
+    if (args.m_chainparams.GetChainType() == ChainType::REGTEST ||
+        args.m_chainparams.GetChainType() == ChainType::TESTNET4 ||
+        args.m_chainparams.GetChainType() == ChainType::TESTNET5) {
         scriptVerifyFlags |= SCRIPT_VERIFY_CHECKTEMPLATEVERIFY;
         scriptVerifyFlags &= ~SCRIPT_VERIFY_DISCOURAGE_CHECKTEMPLATEVERIFY;
         scriptVerifyFlags |= SCRIPT_VERIFY_CHECKSIGFROMSTACK;
