@@ -186,7 +186,11 @@ class FullBlockTest(BitcoinTestFramework):
             blockname = f"for_invalid.{TxTemplate.__name__}"
             self.next_block(blockname)
             badtx = template.get_tx()
-            if TxTemplate != invalid_txs.InputMissing:
+            # SizeTooSmall relies on the tx being exactly 64 witness-stripped
+            # bytes (rejected by BIP 54 rule 3). Signing it would append a
+            # scriptSig signature and push it past 64 bytes, so leave it
+            # unsigned — like InputMissing, which also must not be signed.
+            if TxTemplate not in (invalid_txs.InputMissing, invalid_txs.SizeTooSmall):
                 self.sign_tx(badtx, attempt_spend_tx)
             badblock = self.update_block(blockname, [badtx])
             reject_reason = (template.block_reject_reason or template.reject_reason)

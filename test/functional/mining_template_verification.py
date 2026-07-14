@@ -56,6 +56,11 @@ class MiningTemplateVerificationTest(BitcoinTestFramework):
 
     def set_test_params(self):
         self.num_nodes = 1
+        # Disable BIP 54 on regtest so this test can craft coinbase-locktime
+        # variations (nLockTime != height-1) that would otherwise be preempted
+        # by bad-cb-locktime before their intended bad-txns-nonfinal /
+        # bad-txnmrklroot rejections fire.
+        self.extra_args = [["-vbparams=bip54:-2:9223372036854775807:0"]]
 
     def valid_block_test(self, node, block):
         self.log.info("Valid block")

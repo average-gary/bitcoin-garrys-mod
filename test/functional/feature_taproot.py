@@ -17,7 +17,6 @@ from test_framework.messages import (
     CTxIn,
     CTxInWitness,
     CTxOut,
-    MAX_SEQUENCE_NONFINAL,
     SEQUENCE_FINAL,
     tx_from_hex,
     TX_MAX_STANDARD_VERSION,
@@ -1494,6 +1493,12 @@ class TaprootTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
         self.setup_clean_chain = True
+        # This is a BIP 341/342 test whose deterministic BIP 341 reference
+        # vectors (gen_test_vectors) assume the canonical genesis-child coinbase
+        # with nSequence = SEQUENCE_FINAL. Disable BIP 54 on regtest so that
+        # coinbase remains valid (BIP 54 rule 4 would otherwise reject a final
+        # nSequence) and the published vector hashes stay stable.
+        self.extra_args = [["-vbparams=bip54:-2:9223372036854775807:0"]]
 
     def block_submit(self, node, txs, msg, err_msg, cb_pubkey=None, fees=0, sigops_weight=0, witness=False, accept=False):
 
@@ -1738,12 +1743,10 @@ class TaprootTest(BitcoinTestFramework):
         assert_equal(self.nodes[0].getblockcount(), 0)
         coinbase = CTransaction()
         coinbase.version = 1
-        # BIP 54 rule 4 requires nSequence != 0xffffffff on the coinbase input;
-        # nLockTime = height-1 = 0 is already correct for block 1.
-        coinbase.vin = [CTxIn(COutPoint(0, 0xffffffff), CScript([OP_1, OP_1]), MAX_SEQUENCE_NONFINAL)]
+        coinbase.vin = [CTxIn(COutPoint(0, 0xffffffff), CScript([OP_1, OP_1]), SEQUENCE_FINAL)]
         coinbase.vout = [CTxOut(5000000000, CScript([OP_1]))]
         coinbase.nLockTime = 0
-        assert coinbase.txid_hex == "2a8103d4574e66e8e2c746a4d40f2626ab084263b42c869d1b3c73f8341cc5d5"
+        assert coinbase.txid_hex == "f60c73405d499a956d3162e3483c395526ef78286458a4cb17b125aa92e49b20"
         # Mine it
         block = create_block(hashprev=int(self.nodes[0].getbestblockhash(), 16), coinbase=coinbase)
         block.solve()

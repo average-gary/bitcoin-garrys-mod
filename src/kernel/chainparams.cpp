@@ -718,8 +718,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].min_activation_height = 0;
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].threshold = 108; // 75%
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP54].period = 144;
-        // BIP 54 §Specification uses a 2 hour timewarp grace period.
-        consensus.max_timewarp = 7200;
+        // Timewarp grace period. BIP 54 mainnet-shape rules use 7200s; tests that
+        // opt into BIP 94 (testnet4-shape) via `-test=bip94` want the tighter 600s
+        // grace so they can exercise the same code path as the testnet4 chain.
+        consensus.max_timewarp = opts.enforce_bip94 ? 600 : 7200;
 
         consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].bit = 1;
         consensus.vDeployments[Consensus::DEPLOYMENT_CTVCSFS].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;

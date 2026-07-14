@@ -173,6 +173,15 @@ def create_coinbase(height, pubkey=None, *, script_pubkey=None, extra_output_scr
         coinbaseoutput2.nValue = 0
         coinbaseoutput2.scriptPubKey = extra_output_script
         coinbase.vout.append(coinbaseoutput2)
+    # BIP 54 rule 3 makes any transaction whose witness-stripped serialized size
+    # is exactly 64 bytes invalid, coinbase included. A minimal coinbase can land
+    # on that boundary (e.g. BIP34 heights that need a 2-byte push with an
+    # anyone-can-spend output), so append a single extra scriptSig byte to move
+    # off it. BIP34 only checks the scriptSig prefix, so the extra byte is
+    # consensus-safe, and real coinbases carry a witness commitment that keeps
+    # them well above 64 bytes anyway.
+    if len(coinbase.serialize_without_witness()) == 64:
+        coinbase.vin[0].scriptSig = CScript(bytes(coinbase.vin[0].scriptSig) + bytes([OP_0]))
     return coinbase
 
 def create_tx_with_script(prevtx, n, script_sig=b"", *, amount, output_script=None):
