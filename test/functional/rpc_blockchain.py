@@ -213,7 +213,7 @@ class BlockchainTest(BitcoinTestFramework):
         assert_equal(gdi_result, {
           "hash": blockhash,
           "height": height,
-          "script_flags": ["CHECKLOCKTIMEVERIFY","CHECKSEQUENCEVERIFY","DERSIG","NULLDUMMY","P2SH","TAPROOT","WITNESS"],
+          "script_flags": ["CHECKLOCKTIMEVERIFY","CHECKSEQUENCEVERIFY","CHECKSIGFROMSTACK","CHECKTEMPLATEVERIFY","DERSIG","NULLDUMMY","P2SH","TAPROOT","WITNESS"],
           "deployments": {
             'bip34': {'type': 'buried', 'active': True, 'height': 2},
             'bip66': {'type': 'buried', 'active': True, 'height': 3},

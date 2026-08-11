@@ -145,7 +145,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         add_witness_commitment(block)
         block.hashMerkleRoot = block.calc_merkle_root()
         block.solve()
-        return block.serialize(True).hex(), block.hash
+        return block.serialize(True).hex(), block.hash_hex
 
     def add_block(self, txs):
         block, h = self.get_block(txs)
@@ -395,7 +395,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
             bare_anyone_can_spend_outpoint,
             bare_ctv_specific_scriptSigs_outpoint,
             bare_ctv_specific_scriptSigs_position_2_outpoint,
-        ) = [COutPoint(int(tx.rehash(), 16), 0) for tx in funding_txs]
+        ) = [COutPoint(tx.txid_int, 0) for tx in funding_txs]
 
         self.log.info("Funding all outputs")
         self.add_block(funding_txs)
@@ -415,7 +415,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
             self.nodes[0].sendrawtransaction(
                 taproot_check_template_verify_tx.serialize().hex()
             ),
-            taproot_check_template_verify_tx.rehash(),
+            taproot_check_template_verify_tx.txid_hex,
         )
         self.log.info(
             "Taproot OP_CHECKTEMPLATEVERIFY spend accepted by sendrawtransaction"
@@ -442,7 +442,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
             self.nodes[0].sendrawtransaction(
                 check_template_verify_tx.serialize().hex()
             ),
-            check_template_verify_tx.rehash(),
+            check_template_verify_tx.txid_hex,
         )
         self.log.info(
             "Segwit OP_CHECKTEMPLATEVERIFY spend accepted by sendrawtransaction"
@@ -462,7 +462,6 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         )
         check_template_verify_tx_mutated_amount = check_template_verify_tx
         check_template_verify_tx_mutated_amount.vout[0].nValue += 1
-        check_template_verify_tx_mutated_amount.rehash()
         self.fail_block([check_template_verify_tx_mutated_amount])
         self.log.info("Modified Segwit OP_CHECKTEMPLATEVERIFY spend failed to confirm")
 
@@ -470,7 +469,6 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         self.log.info("Testing that multiple inputs are disallowed when specified")
         check_template_verify_two_inputs = check_template_verify_tx
         check_template_verify_two_inputs.vin += [CTxIn(anyone_can_spend_outpoint)]
-        check_template_verify_two_inputs.rehash()
         self.fail_block([check_template_verify_two_inputs])
 
         self.log.info(
@@ -482,7 +480,6 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         spendtx.version = 2
         spendtx.vin = [CTxIn(anyone_can_spend_outpoint)]
         spendtx.vout += [CTxOut(int(amount_sats - 1000), random_p2sh())]
-        spendtx.rehash()
         blockhash = self.add_block([spendtx])
         # Reset tip
         self.nodes[0].invalidateblock(blockhash)
@@ -592,7 +589,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
             self.nodes[0].sendrawtransaction(
                 check_template_verify_tx_empty_stack.serialize().hex()
             ),
-            check_template_verify_tx_empty_stack.rehash(),
+            check_template_verify_tx_empty_stack.txid_hex,
         )
         self.log.info(
             "Witness stack defined OP_CHECKTEMPLATEVERIFY spend accepted by sendrawtransaction"
@@ -658,7 +655,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
             spendtx.version = 2
             spendtx.vin += [CTxIn(out)]
             spendtx.vout += level[:2]
-            out = COutPoint(int(spendtx.rehash(), 16), 0)
+            out = COutPoint(spendtx.txid_int, 0)
             txs.append(spendtx)
         self.add_block(txs)
 
@@ -672,7 +669,6 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         )
         self.fail_block([check_template_verify_tx_pos_2])
         check_template_verify_tx_pos_2.vin += [CTxIn(bare_anyone_can_spend_outpoint)]
-        check_template_verify_tx_pos_2.rehash()
         self.log.info(
             "Testing that the transaction fails because the inputs are in the wrong order"
         )
@@ -681,11 +677,9 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
             "Testing that the transaction succeeds when the inputs are in the correct order"
         )
         check_template_verify_tx_pos_2.vin.reverse()
-        check_template_verify_tx_pos_2.rehash()
         blockhash = self.add_block([check_template_verify_tx_pos_2])
         self.nodes[0].invalidateblock(blockhash)
         check_template_verify_tx_pos_2.vin[0].scriptSig = CScript([OP_TRUE])
-        check_template_verify_tx_pos_2.rehash()
         self.log.info(
             "Testing that the transaction fails because the scriptSig on the other input has been modified"
         )
@@ -701,7 +695,6 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
             CTxIn(bare_anyone_can_spend_outpoint, CScript([OP_TRUE])),
         ]
         check_template_verify_tx_specific_scriptSigs.vout = outputs_specific_scriptSigs
-        check_template_verify_tx_specific_scriptSigs.rehash()
         self.log.info(
             "Testing bare OP_CHECKTEMPLATEVERIFY rejects incorrect scriptSigs"
         )
@@ -711,7 +704,6 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         check_template_verify_tx_specific_scriptSigs.vin[1].scriptSig = CScript(
             [OP_FALSE]
         )
-        check_template_verify_tx_specific_scriptSigs.rehash()
         blockhash = self.add_block([check_template_verify_tx_specific_scriptSigs])
         self.nodes[0].invalidateblock(blockhash)
 
@@ -730,7 +722,6 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         check_template_verify_tx_specific_scriptSigs_position_2.vout = (
             outputs_specific_scriptSigs_position_2
         )
-        check_template_verify_tx_specific_scriptSigs_position_2.rehash()
         self.add_block([check_template_verify_tx_specific_scriptSigs_position_2])
 
 

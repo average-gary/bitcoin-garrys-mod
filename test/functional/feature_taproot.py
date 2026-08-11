@@ -635,6 +635,7 @@ ERR_DISABLED_OPCODE = {"err_msg": "Attempted to use a disabled opcode"}
 ERR_TAPSCRIPT_CHECKMULTISIG = {"err_msg": "OP_CHECKMULTISIG(VERIFY) is not available in tapscript"}
 ERR_TAPSCRIPT_MINIMALIF = {"err_msg": "OP_IF/NOTIF argument must be minimal in tapscript"}
 ERR_TAPSCRIPT_EMPTY_PUBKEY = {"err_msg": "Empty public key in tapscript"}
+ERR_PUBKEYTYPE = {"err_msg": "Public key is neither compressed or uncompressed"}
 ERR_STACK_SIZE = {"err_msg": "Stack size limit exceeded"}
 ERR_CLEANSTACK = {"err_msg": "Stack size must be exactly one after execution"}
 ERR_INVALID_STACK_OPERATION = {"err_msg": "Operation not valid with the current stack size"}
