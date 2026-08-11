@@ -42,14 +42,21 @@ import random
 from io import BytesIO
 from test_framework.address import script_to_p2sh
 
-# CTV and CSFS are standard-but-not-mandatory flags, so CheckInputScripts()
-# reports their failures with the "mempool" prefix even in a block context.
-CHECKTEMPLATEVERIFY_ERROR = "mempool-script-verify-flag-failed (Script failed an OP_CHECKTEMPLATEVERIFY operation)"
+# CheckInputScripts() labels a script failure by the flag set it was verified
+# under: mempool acceptance uses STANDARD flags (which include non-mandatory
+# ones), while block validation uses the mandatory consensus flags. So the same
+# script error surfaces under a different prefix depending on the context.
+CTV_FAILED = "Script failed an OP_CHECKTEMPLATEVERIFY operation"
+STACK_TOO_SHORT = "Operation not valid with the current stack size"
+
+MEMPOOL_CHECKTEMPLATEVERIFY_ERROR = f"mempool-script-verify-flag-failed ({CTV_FAILED})"
+BLOCK_CHECKTEMPLATEVERIFY_ERROR = f"block-script-verify-flag-failed ({CTV_FAILED})"
+MEMPOOL_STACK_TOO_SHORT_ERROR = f"mempool-script-verify-flag-failed ({STACK_TOO_SHORT})"
+BLOCK_STACK_TOO_SHORT_ERROR = f"block-script-verify-flag-failed ({STACK_TOO_SHORT})"
+# Discouragement is never a mandatory rule, so it only ever appears in the
+# mempool context.
 DISCOURAGED_ERROR = (
     "mempool-script-verify-flag-failed (NOPx reserved for soft-fork upgrades)"
-)
-STACK_TOO_SHORT_ERROR = (
-    "mempool-script-verify-flag-failed (Operation not valid with the current stack size)"
 )
 
 
@@ -157,7 +164,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         assert_equal(self.nodes[0].getbestblockhash(), h)
         return h
 
-    def fail_block(self, txs, cause=CHECKTEMPLATEVERIFY_ERROR):
+    def fail_block(self, txs, cause=BLOCK_CHECKTEMPLATEVERIFY_ERROR):
         block, h = self.get_block(txs)
         assert_equal(self.nodes[0].submitblock(block), cause)
         assert_equal(self.nodes[0].getbestblockhash(), self.tip)
@@ -536,7 +543,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
 
         assert_raises_rpc_error(
             -26,
-            STACK_TOO_SHORT_ERROR,
+            MEMPOOL_STACK_TOO_SHORT_ERROR,
             self.nodes[0].sendrawtransaction,
             check_template_verify_tx_empty_stack.serialize().hex(),
         )
@@ -546,7 +553,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
         )
 
         # Now we verify that a block with this transaction is invalid
-        self.fail_block([check_template_verify_tx_empty_stack], STACK_TOO_SHORT_ERROR)
+        self.fail_block([check_template_verify_tx_empty_stack], BLOCK_STACK_TOO_SHORT_ERROR)
         self.log.info(
             "Segwit OP_CHECKTEMPLATEVERIFY with wrong size stack spend rejected from block"
         )
@@ -634,7 +641,7 @@ class CheckTemplateVerifyTest(BitcoinTestFramework):
 
         assert_raises_rpc_error(
             -26,
-            CHECKTEMPLATEVERIFY_ERROR,
+            MEMPOOL_CHECKTEMPLATEVERIFY_ERROR,
             self.nodes[0].sendrawtransaction,
             p2sh_check_template_verify_tx.serialize().hex(),
         )
