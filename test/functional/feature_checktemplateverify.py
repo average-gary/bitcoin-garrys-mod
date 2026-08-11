@@ -42,12 +42,14 @@ import random
 from io import BytesIO
 from test_framework.address import script_to_p2sh
 
-CHECKTEMPLATEVERIFY_ERROR = "mandatory-script-verify-flag-failed (Script failed an OP_CHECKTEMPLATEVERIFY operation)"
+# CTV and CSFS are standard-but-not-mandatory flags, so CheckInputScripts()
+# reports their failures with the "mempool" prefix even in a block context.
+CHECKTEMPLATEVERIFY_ERROR = "mempool-script-verify-flag-failed (Script failed an OP_CHECKTEMPLATEVERIFY operation)"
 DISCOURAGED_ERROR = (
-    "non-mandatory-script-verify-flag (NOPx reserved for soft-fork upgrades)"
+    "mempool-script-verify-flag-failed (NOPx reserved for soft-fork upgrades)"
 )
 STACK_TOO_SHORT_ERROR = (
-    "mandatory-script-verify-flag-failed (Operation not valid with the current stack size)"
+    "mempool-script-verify-flag-failed (Operation not valid with the current stack size)"
 )
 
 
